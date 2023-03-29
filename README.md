@@ -22,5 +22,12 @@ This is a tool to manage Swift compilation on Windows.
 2. Make your changes
 3. Create a pull request
 
+## Author
+[Irwin Rodriguez](https://github.com/Irwin1985)
+
+## Acknowledgments
+* [Building Swift on Windows](https://github.com/compnerd/swift-build/blob/main/docs/GettingStartedWindows.md)
+* [RingPM from Mahmoud Fayed](https://github.com/ring-lang/ring/tree/master/tools/ringpm)
+
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
