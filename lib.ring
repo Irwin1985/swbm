@@ -33,7 +33,14 @@ func runCommands
 	ok
 	
 	cCommand  = aCommands[1]
-	cProjectName = aCommands[2]
+	cProjectName = ""
+	
+	# get the project name
+	if len(aCommands) > 1
+		cProjectName = aCommands[2]
+	ok
+
+	# get the arguments	
 	aArgs = []
 	if len(aCommands) > 2
 		for i=3 to len(aCommands)
@@ -50,6 +57,8 @@ func runCommands
 	on "build"
 		validateCommand(len(aArgs))
 		buildProject(cProjectName)
+	on "version"
+		?cc_print(CC_FG_YELLOW, "Swift Builder Manager (sbm) v" + _VERSION)
 	else
 		cc_print(CC_FG_RED, "Unknown command ")
 		?cc_print(CC_FG_DARK_YELLOW, cCommand)
