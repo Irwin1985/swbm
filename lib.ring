@@ -94,23 +94,42 @@ func runProject tcProjectName, taArgs
 	if len(tcProjectName) = 0
 		tcProjectName = getProjectName()
 	ok
+
+	# are we going to build a single swift file?
+	if right(tcProjectName, 6) = ".swift"
+		# Build and run single file
+		if buildSingleFile(tcProjectName)
+			cName = substr(tcProjectName, 1, len(tcProjectName)-6)
+			cExecutable = currentDir() + "\" + cName + ".exe"
+			runProgram(cExecutable, taArgs)
+		ok
+		return
+	ok
+
 	# we need to build the project first
 	if buildProject(tcProjectName)
 		cExecutable = getExecutableName()		
-		if not fExists(cExecutable)
-			cc_print(CC_FG_RED, "Executable not found: ")
-			? cExecutable
-			return
-		ok
-		# detructure arguments
-		cArgs = ""
-		for arg in taArgs
-			cArgs += " " + arg
-		next
-		# run the executable
-		? cc_print(CC_FG_YELLOW, "Running executable...")
-		system(cExecutable + " " + cArgs)
+		runProgram(cExecutable, taArgs)
 	ok
+
+
+#
+# run the final executable
+#
+func runProgram tcExecutable, taArgs
+	if not fExists(tcExecutable)
+		cc_print(CC_FG_RED, "Executable not found: ")
+		? tcExecutable
+		return
+	ok
+	# detructure arguments
+	cArgs = ""
+	for arg in taArgs
+		cArgs += " " + arg
+	next
+	# run the executable
+	? cc_print(CC_FG_YELLOW, "Running executable...")
+	system(tcExecutable + " " + cArgs)
 
 #
 # builds the project
@@ -119,18 +138,17 @@ func buildProject tcProjectName
 	if len(tcProjectName) = 0
 		tcProjectName = getProjectName()
 	ok
+
+	# are we going to build a single swift file?
+	if right(tcProjectName, 6) = ".swift"		
+		buildSingleFile(tcProjectName)
+		return
+	ok
+
 	aBuildSettings = loadConfigFile()
 
 	cc_print(CC_FG_YELLOW, "Building project: ")
 	? aBuildSettings[:PROJECTNAME]
-
-	# Get the %SDKROOT% system variable
-	cWinSdk = SysGet("SDKROOT")
-	if len(cWinSdk)
-		# if not registered then we build one.
-		cPath = "\Library\Developer\Platforms\Windows.platform\Developer\SDKs\Windows.sdk"
-		cWinSdk = SysGet("SystemDrive") + cPath
-	ok
 
 	# Prepare the source files
 	cSourceFiles = aBuildSettings[:MAIN]
@@ -152,46 +170,7 @@ func buildProject tcProjectName
 		cOutput = substr(cOutput, 1, len(cOutput)-4)
 	ok
 
-	# if output exists the delete
-	cExecutable = currentDir() + "\" + cOutput + ".exe"
-	if fexists(cExecutable)
-		system("del " + cExecutable)
-	ok
-
-	cBuffer = 
-`
-set SDKROOT=:SDK_ROOT
-set SourceFiles=:SOURCE_FILES
-set Output=:OUTPUT
-
-:: build with optimization
-swiftc -O -o %Output%.exe %SourceFiles% -sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/swift/windows/x86_64
-
-::=======================================::
-:: delete temporary files
-::=======================================::
-if exist %Output%.exp del /f %Output%.exp
-if exist %Output%.lib del /f %Output%.lib
-if exist build.bat del /f build.bat
-`
-# substitute macros
-cBuffer = substr(cBuffer, ":SDK_ROOT", cWinSdk)
-cBuffer = substr(cBuffer, ":OUTPUT", cOutput)
-cBuffer = substr(cBuffer, ":SOURCE_FILES", cSourceFiles)
-
-# Create the bat file
-write("build.bat", cBuffer)
-
-if not fexists("build.bat")
-	cc_print(CC_FG_RED, "Could not generate the file ")
-	? "build.bat"
-	return false
-ok
-
-# Run the bat file
-system("build.bat")
-
-return fexists(cExecutable)
+	return buildProgram(cOutput, cSourceFiles)
 
 
 #
@@ -298,3 +277,87 @@ func checkFile tcFile
 func getProjectName
 	aConfig = loadConfigFile()
 	return aConfig[:PROJECTNAME]
+
+
+#
+# Build and run a single file
+#
+func buildSingleFile tcFileName
+	cSourceFile = currentDir() + "\" + tcFileName
+	if not fExists(cSourceFile)
+		cc_print(CC_FG_RED, "File does not exist: ")
+		? cSourceFile
+		bye
+	ok
+	
+	cOutput = substr(tcFileName, 1, len(tcFileName)-6) # trim .swift
+
+	return buildProgram(cOutput, cSourceFile)
+
+
+#
+# build the swift program
+#
+func buildProgram tcOutput, tcSourceFiles
+	cWinSdk = getWinSDK()
+
+	# if output exists then delete
+	cExecutable = currentDir() + "\" + tcOutput + ".exe"
+	if fexists(cExecutable)
+		system("del " + cExecutable)
+	ok
+
+	cBuffer = getBuildMacro()
+
+	# substitute macros
+	cBuffer = substr(cBuffer, ":SDK_ROOT", cWinSdk)
+	cBuffer = substr(cBuffer, ":OUTPUT", tcOutput)
+	cBuffer = substr(cBuffer, ":SOURCE_FILES", tcSourceFiles)
+	
+	# Create the bat file
+	write("build.bat", cBuffer)
+	
+	if not fexists("build.bat")
+		cc_print(CC_FG_RED, "Could not generate the file ")
+		? "build.bat"
+		return false
+	ok
+	
+	# Run the bat file
+	system("build.bat")
+	
+	return fexists(cExecutable)
+
+#
+# Create the build macro
+#
+func getBuildMacro
+	cMacro = `set SDKROOT=:SDK_ROOT
+		set SourceFiles=:SOURCE_FILES
+		set Output=:OUTPUT
+
+		:: build with optimization
+		swiftc -O -o %Output%.exe %SourceFiles% -sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/swift/windows/x86_64
+		
+		::=======================================::
+		:: delete temporary files
+		::=======================================::
+		if exist %Output%.exp del /f %Output%.exp
+		if exist %Output%.lib del /f %Output%.lib
+		if exist build.bat del /f build.bat`
+
+	return cMacro
+
+
+#
+# get the SDKROOT system variable
+#
+func getWinSDK
+	cWinSdk = SysGet("SDKROOT")
+	if len(cWinSdk) = 0
+		# if not registered then we build one.
+		cPath = "\Library\Developer\Platforms\Windows.platform\Developer\SDKs\Windows.sdk"
+		cWinSdk = SysGet("SystemDrive") + cPath
+	ok
+
+	return cWinSdk

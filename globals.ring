@@ -2,4 +2,4 @@
 # Global identifiers
 #
 
-_VERSION = "0.0.1"
+_VERSION = "0.0.3"
