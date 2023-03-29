@@ -53,9 +53,10 @@ func runCommands
 		validateCommand(len(aArgs))
 		createProject(cProjectName)
 	on "run"		
+		# validateCommand(len(aArgs))
 		runProject(cProjectName, aArgs)
 	on "build"
-		validateCommand(len(aArgs))
+		# validateCommand(len(aArgs))
 		buildProject(cProjectName)
 	on "version"
 		?cc_print(CC_FG_YELLOW, "Swift Builder Manager (sbm) v" + _VERSION)
@@ -90,6 +91,9 @@ func createProject tcProjectName
 # run an existing project
 #
 func runProject tcProjectName, taArgs
+	if len(tcProjectName) = 0
+		tcProjectName = getProjectName()
+	ok
 	# we need to build the project first
 	if buildProject(tcProjectName)
 		cExecutable = getExecutableName()		
@@ -112,6 +116,9 @@ func runProject tcProjectName, taArgs
 # builds the project
 #
 func buildProject tcProjectName
+	if len(tcProjectName) = 0
+		tcProjectName = getProjectName()
+	ok
 	aBuildSettings = loadConfigFile()
 
 	cc_print(CC_FG_YELLOW, "Building project: ")
@@ -267,7 +274,7 @@ func printOperationCompleted
 #
 func getExecutableName
 	aConfig = loadConfigFile()
-	cOutput = aConfig["output"]
+	cOutput = aConfig[:OUTPUT]
 	if lower(right(cOutput, 4)) != ".exe"
 		cOutput += ".exe"
 	ok
@@ -283,3 +290,11 @@ func checkFile tcFile
 		? cFile
 		bye
 	ok
+
+
+#
+# getProjectName
+#
+func getProjectName
+	aConfig = loadConfigFile()
+	return aConfig[:PROJECTNAME]
