@@ -5,7 +5,7 @@ Swift Builder Manager for Windows
 This is a tool to manage Swift compilation on Windows.
 
 ## Installation
-1. Download the latest release from [here]()
+1. Download the latest release from [here](https://github.com/Irwin1985/swbm/releases/download/swbm/swbm.zip)
 2. Extract the zip file to your desired location (eg: `C:\swbm`)
 3. Add the path to your PATH environment variable (eg: `C:\swbm`)
 4. Run `swbm` in your terminal to see the help message
